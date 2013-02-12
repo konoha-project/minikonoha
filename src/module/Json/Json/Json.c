@@ -29,6 +29,19 @@ extern "C" {
 #include "kjson/kjson.c"
 #include <konoha3/konoha.h>
 #define JSONAPI PLATAPI JsonModule.
+
+static JSON JSONUString_new2(JSONMemoryPool *jm, const char *s, size_t len)
+{
+	bool malloced;
+	JSONString *o = (JSONString *) JSONMemoryPool_Alloc(jm, sizeof(*o), &malloced);
+	JSON json = toJSON(ValueU(o));
+	JSON_Init(json);
+	char *str = (len > JSONSTRING_INLINE_SIZE) ? (char *) malloc(len) : o->text;
+	memcpy(str, s, len);
+	JSONString_init(o, (const char *)str, len);
+	return json;
+}
+
 // -------------------------------------------------------------------------
 /* JSON Parse/ToString API */
 
@@ -61,7 +74,7 @@ static uint64_t NewJsonI(JSONMemoryPool *pool, KJSONTYPE type, va_list ap)
 		case KJSON_ARRAY:    return JSONArray_new(pool, 0).bits;
 		case KJSON_STRING:   {
 			const char *s = va_arg(ap, const char *);
-			return JSONString_new(pool, s, strlen(s)).bits;
+			return JSONUString_new2(pool, s, strlen(s)).bits;
 		}
 		case KJSON_INT:      return JSONInt_new(pool, va_arg(ap, intptr_t)).bits;
 		case KJSON_DOUBLE:   return JSONDouble_new(va_arg(ap, double)).bits;
